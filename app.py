@@ -1,3 +1,4 @@
+# SiwanKURD app v2 (works with flat or templates/static layout)
 import os
 import time
 import hmac
@@ -6,6 +7,7 @@ import secrets
 from datetime import date, datetime, timedelta
 from functools import wraps
 
+from jinja2 import ChoiceLoader, FileSystemLoader
 from flask import (Flask, request, session, redirect, url_for, render_template,
                    abort, Response, flash, g, send_from_directory)
 
@@ -15,7 +17,10 @@ from core import (connect, init_db, status, create_user, parse_link, active_link
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # ساختار تخت: همه‌ی فایل‌ها کنار هم هستن (بدون پوشه)، تا آپلود از گوشی راحت باشه.
-app = Flask(__name__, static_folder=None, template_folder=BASE_DIR)
+app = Flask(__name__, static_folder=None)
+# قالب‌ها و فایل‌های استاتیک هم کنار app.py پیدا می‌شن، هم داخل پوشه‌های templates/static
+SEARCH_DIRS = [BASE_DIR, os.path.join(BASE_DIR, "templates"), os.path.join(BASE_DIR, "static")]
+app.jinja_loader = ChoiceLoader([FileSystemLoader(d) for d in SEARCH_DIRS])
 STATIC_FILES = {"style.css", "app.js", "bg.jpg", "logo.webp"}
 
 
@@ -23,7 +28,10 @@ STATIC_FILES = {"style.css", "app.js", "bg.jpg", "logo.webp"}
 def static_files(filename):
     if filename not in STATIC_FILES:  # فقط همین چهار فایل عمومی هستن
         abort(404)
-    return send_from_directory(BASE_DIR, filename, max_age=3600)
+    for d in SEARCH_DIRS:
+        if os.path.isfile(os.path.join(d, filename)):
+            return send_from_directory(d, filename, max_age=3600)
+    abort(404)
 
 
 app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
