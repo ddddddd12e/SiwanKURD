@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}اشتراک {{ u.name }} | {{ brand }}{% endblock %}
+{% block body_class %}sub{% endblock %}
+{% block content %}
+<main class="wrap narrow">
+  <header class="sub-head">
+    <div class="brand"><img class="logo" src="{{ url_for('static', filename='logo.webp') }}" alt="" width="44" height="44"><h1 class="wordmark">{{ brand }}</h1></div>
+    <span class="pill {{ st.state }}">{{ st.label }}</span>
+  </header>
+
+  <section class="usage">
+    <p class="who">{{ u.name }}</p>
+    {% if st.quota > 0 %}
+      <p class="remain">{{ st.remaining|gb|fa }} <span>گیگ باقی‌مانده</span></p>
+      <div class="bar {% if st.pct >= 100 %}bad{% elif st.pct >= 80 %}warn{% endif %}" role="progressbar" aria-valuenow="{{ st.pct }}" aria-valuemin="0" aria-valuemax="100">
+        <i style="width: {{ st.pct }}%"></i>
+      </div>
+      <p class="muted small">{{ st.used|gb|fa }} از {{ st.quota|gb|fa }} گیگ مصرف شده</p>
+    {% else %}
+      <p class="remain">نامحدود <span>حجم</span></p>
+      <p class="muted small">{{ st.used|gb|fa }} گیگ مصرف شده</p>
+    {% endif %}
+    <p class="expiry">
+      {% if st.days_left is none %}بدون تاریخ انقضا
+      {% elif st.days_left < 0 %}{{ (-st.days_left)|fa }} روز از انقضا گذشته
+      {% elif st.days_left == 0 %}امروز آخرین روز اشتراکه
+      {% else %}{{ st.days_left|fa }} روز مانده تا انقضا{% endif %}
+    </p>
+  </section>
+
+  <section class="block">
+    <h2>لینک اشتراک</h2>
+    <p class="muted small">این لینک رو توی برنامه‌ی کلاینتت اضافه کن تا کانفیگ‌ها خودکار به‌روز بشن.</p>
+    <div class="copyrow">
+      <code dir="ltr">{{ url }}</code>
+      <button class="btn small" type="button" data-copy="{{ url }}">کپی لینک</button>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>کانفیگ‌ها</h2>
+    {% if configs %}
+      <ul class="cfgs">
+        {% for c in configs %}
+        <li>
+          <div class="cfg-name">{{ c.label }}</div>
+          <code dir="ltr">{{ c.link }}</code>
+          <button class="btn small ghost" type="button" data-copy="{{ c.link }}">کپی</button>
+        </li>
+        {% endfor %}
+      </ul>
+    {% elif not st.ok %}
+      <p class="muted">اشتراکت {{ st.label }} هست، برای همین کانفیگی نمایش داده نمی‌شه. برای تمدید با پشتیبانی تماس بگیر.</p>
+    {% else %}
+      <p class="muted">هنوز کانفیگی اضافه نشده.</p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

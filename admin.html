@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}مدیریت | {{ brand }}{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block content %}
+<main class="wrap">
+  <header class="top">
+    <div class="brand"><img class="logo" src="{{ url_for('static', filename='logo.webp') }}" alt="" width="44" height="44"><h1 class="wordmark">{{ brand }}</h1></div>
+    <form method="post" action="{{ url_for('logout') }}">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <button class="btn ghost small" type="submit">خروج</button>
+    </form>
+  </header>
+
+  <section class="stats">
+    <div><b>{{ stats.users|fa }}</b><span>کاربر</span></div>
+    <div><b>{{ stats.active_users|fa }}</b><span>کاربر فعال</span></div>
+    <div><b>{{ stats.configs|fa }}</b><span>کانفیگ فعال</span></div>
+    <div><b>{{ stats.used|gb|fa }}</b><span>گیگ مصرف کل</span></div>
+  </section>
+
+  <section class="block">
+    <h2>کانفیگ‌ها</h2>
+    <p class="muted small">کانفیگ‌هایی که اینجا فعال باشن، به همه‌ی کاربرهای فعال نشون داده می‌شن.</p>
+    <form method="post" action="{{ url_for('config_add') }}" class="stack">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <label>لینک‌ها (هر خط یکی)
+        <textarea name="links" rows="3" dir="ltr" placeholder="vless://...#اسم-کانفیگ"></textarea>
+      </label>
+      <button class="btn" type="submit">افزودن کانفیگ</button>
+    </form>
+
+    {% if configs %}
+    <ul class="cfgs admin-cfgs">
+      {% for c in configs %}
+      <li class="{{ '' if c.active else 'off' }}">
+        <div class="cfg-name">{{ c.label }}</div>
+        <code dir="ltr">{{ c.link }}</code>
+        <div class="row-actions">
+          <form method="post" action="{{ url_for('config_toggle', cid=c.id) }}">
+            <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+            <button class="btn small ghost" type="submit">{{ 'غیرفعال کن' if c.active else 'فعال کن' }}</button>
+          </form>
+          <form method="post" action="{{ url_for('config_delete', cid=c.id) }}" onsubmit="return confirm('این کانفیگ حذف بشه؟')">
+            <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+            <button class="btn small danger" type="submit">حذف</button>
+          </form>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">هنوز کانفیگی نداری. لینک اولین کانفیگ رو بالا بچسبون.</p>
+    {% endif %}
+  </section>
+
+  <section class="block">
+    <h2>کاربرها</h2>
+    <form method="post" action="{{ url_for('user_add') }}" class="inline">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <label>اسم<input name="name" required maxlength="60"></label>
+      <label>حجم (گیگ)<input name="quota_gb" type="number" min="0" step="0.5" value="{{ core.DEFAULT_QUOTA_GB|gb }}"></label>
+      <label>مدت (روز)<input name="days" type="number" min="0" step="1" value="{{ core.DEFAULT_DAYS }}"></label>
+      <button class="btn" type="submit">ساخت کاربر</button>
+    </form>
+    <p class="muted small">حجم ۰ یعنی نامحدود؛ مدت ۰ یعنی بدون انقضا.</p>
+
+    {% if users %}
+    <div class="scroll">
+    <table class="tbl">
+      <thead><tr><th>کاربر</th><th>وضعیت</th><th>مصرف</th><th>زمان</th><th></th></tr></thead>
+      <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.name }}{% if u.telegram_id %}<div class="muted small">متصل به تلگرام</div>{% endif %}</td>
+        <td><span class="pill {{ u.st.state }}">{{ u.st.label }}</span></td>
+        <td>
+          {% if u.st.quota > 0 %}
+          <div class="bar mini {% if u.st.pct >= 100 %}bad{% elif u.st.pct >= 80 %}warn{% endif %}"><i style="width: {{ u.st.pct }}%"></i></div>
+          <div class="small">{{ u.used_gb|gb|fa }} / {{ u.st.quota|gb|fa }} گیگ</div>
+          {% else %}<div class="small">{{ u.used_gb|gb|fa }} گیگ (نامحدود)</div>{% endif %}
+        </td>
+        <td class="small">{% if u.st.days_left is none %}—{% elif u.st.days_left < 0 %}منقضی{% else %}{{ u.st.days_left|fa }} روز{% endif %}</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn small" type="button" data-copy="{{ sub_url(u.token) }}">کپی لینک اشتراک</button>
+            {% if bot %}<button class="btn small ghost" type="button" data-copy="https://t.me/{{ bot }}?start={{ u.token }}">لینک اتصال ربات</button>{% endif %}
+          </div>
+          <details>
+            <summary>ویرایش</summary>
+            <form method="post" action="{{ url_for('user_update', uid=u.id) }}" class="stack edit">
+              <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+              <label>اسم<input name="name" value="{{ u.name }}" maxlength="60"></label>
+              <label>حجم کل (گیگ)<input name="quota_gb" type="number" min="0" step="0.5" value="{{ u.quota_gb|gb }}"></label>
+              <label>مصرف‌شده (گیگ)<input name="used_gb" type="number" min="0" step="0.1" value="{{ u.used_gb|gb }}"></label>
+              <label>تاریخ انقضا<input name="expires_at" type="date" value="{{ u.expires_at or '' }}"></label>
+              <button class="btn small" type="submit">ذخیره</button>
+            </form>
+            <div class="row-actions">
+              <form method="post" action="{{ url_for('user_toggle', uid=u.id) }}">
+                <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+                <button class="btn small ghost" type="submit">{{ 'غیرفعال کن' if u.enabled else 'فعال کن' }}</button>
+              </form>
+              <form method="post" action="{{ url_for('user_newtoken', uid=u.id) }}" onsubmit="return confirm('لینک اشتراک قبلی از کار می‌افته. ادامه بدم؟')">
+                <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+                <button class="btn small ghost" type="submit">لینک جدید</button>
+              </form>
+              <form method="post" action="{{ url_for('user_delete', uid=u.id) }}" onsubmit="return confirm('این کاربر حذف بشه؟')">
+                <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+                <button class="btn small danger" type="submit">حذف</button>
+              </form>
+            </div>
+          </details>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="empty">هنوز کاربری نساختی. از فرم بالا اولین کاربر رو بساز و لینک اشتراکش رو باز کن.</p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

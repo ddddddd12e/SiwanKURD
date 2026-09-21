@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | {{ brand }}{% endblock %}
+{% block body_class %}center{% endblock %}
+{% block content %}
+<main class="login">
+  <img class="logo big" src="{{ url_for('static', filename='logo.webp') }}" alt="" width="96" height="96">
+  <h1 class="wordmark">{{ brand }}</h1>
+  <h2>{{ title }}</h2>
+  <p class="muted">{{ msg }}</p>
+</main>
+{% endblock %}

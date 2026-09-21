@@ -22,4 +22,7 @@ ADMIN_PASS=1234 BRAND_NAME=SiwanKURD python app.py
 بعد `http://localhost:5000/admin`.
 
 ## تنظیمات
-همه‌ی متغیرها توی `.env.example` توضیح داده شدن.
+همه‌ی متغیرها توی `env.example` توضیح داده شدن.
+
+## ساختار فایل‌ها
+همه‌ی فایل‌ها کنار هم توی یه پوشه هستن (پوشه‌ی جدا برای templates و static نداریم)، تا از گوشی راحت توی GitHub آپلود بشه.

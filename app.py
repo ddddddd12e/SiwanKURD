@@ -7,13 +7,25 @@ from datetime import date, datetime, timedelta
 from functools import wraps
 
 from flask import (Flask, request, session, redirect, url_for, render_template,
-                   abort, Response, flash, g)
+                   abort, Response, flash, g, send_from_directory)
 
 import core
 from core import (connect, init_db, status, create_user, parse_link, active_links,
                   raw_subscription, sub_url, fmt_gb, BRAND)
 
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# ساختار تخت: همه‌ی فایل‌ها کنار هم هستن (بدون پوشه)، تا آپلود از گوشی راحت باشه.
+app = Flask(__name__, static_folder=None, template_folder=BASE_DIR)
+STATIC_FILES = {"style.css", "app.js", "bg.jpg", "logo.webp"}
+
+
+@app.route("/static/<path:filename>", endpoint="static")
+def static_files(filename):
+    if filename not in STATIC_FILES:  # فقط همین چهار فایل عمومی هستن
+        abort(404)
+    return send_from_directory(BASE_DIR, filename, max_age=3600)
+
+
 app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
